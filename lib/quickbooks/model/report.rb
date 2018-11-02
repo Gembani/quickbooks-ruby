@@ -39,7 +39,12 @@ module Quickbooks
 
           next nil if value.blank?
           next value if value.to_s.match(/^\d+$|^\d+.\d+$|^-\d+|^-\d+.\d+$|^.\d+$/).nil?
-          BigDecimal(value)
+          begin
+            value = BigDecimal(value)
+          rescue ArgumentError => e
+
+          end
+          value
         end
       end
 
