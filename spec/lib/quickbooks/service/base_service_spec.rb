@@ -2,19 +2,19 @@ describe Quickbooks::Service::BaseService do
 
   it ".is_json" do
     construct_service :invoice
-    expect(@service.is_json?).to be_false
+    expect(@service.is_json?).to be false
     construct_service :tax_service
-    expect(@service.is_json?).to be_true
+    expect(@service.is_json?).to be true
   end
 
   describe "#url_for_query" do
     shared_examples "encoding the query correctly" do |domain|
-      let(:correct_url) { "https://#{domain}/v3/company/1234/query?query=SELECT+*+FROM+Customer+where+Name+%3D+%27John%27" }
+      let(:correct_url) { "https://#{domain}/v3/company/1234/query?query=SELECT+%2A+FROM+Customer+where+Name+%3D+%27John%27" }
 
       it "correctly encodes the query" do
         subject.realm_id = 1234
         query = "SELECT * FROM Customer where Name = 'John'"
-        subject.url_for_query(query).should include(correct_url)
+        expect(subject.url_for_query(query)).to include(correct_url)
       end
     end
 
@@ -42,113 +42,8 @@ describe Quickbooks::Service::BaseService do
     end
 
     it "correctly initializes with an access_token and realm" do
-      @service.company_id.should == "9991111222"
-      @service.oauth.is_a?(OAuth::AccessToken).should == true
-    end
-  end
-
-  describe 'do_http' do
-    let(:base_url) { 'http://example.com/'}
-
-    [:get, :post, :upload].each do |request_method|
-      context 'when no access_token exists' do
-        before do
-          construct_service :base_service, nil
-        end
-
-        it "should raise RunTimeError" do
-          expect { @service.send(:do_http, request_method, base_url, nil, {}) }.to raise_error
-        end
-      end
-    end
-
-    context 'when an access token exists' do
-      [:get, :post].each do |request_method|
-        context "when the method is #{request_method}" do
-          before do
-            construct_service :base_service
-            @service.stub(:do_http).and_call_original
-          end
-
-          context 'when a non-302 response is received' do
-            before do
-              stub_request(request_method, base_url, ["200", "OK"], fixture("items.xml"))
-            end
-
-            it "calls do_http only once" do
-              @service.send(:do_http, request_method, base_url, nil, {})
-              @service.should have_received(:do_http).once
-            end
-          end
-
-          context 'when a 302 response is received' do
-            let(:headers) do
-              {
-                "Content-Type" => "application/xml",
-                "Accept" => "application/xml",
-                "Accept-Encoding" => "gzip, deflate"
-              }
-            end
-            let(:redirect_location) { "#{base_url}elsewhere" }
-
-            before do
-              stub_request(request_method, base_url, ["302", "Found"], fixture("items.xml"), :location => redirect_location)
-              stub_request(request_method, redirect_location, ["200", "OK"], fixture("items.xml"))
-            end
-
-            it "calls do_http twice" do
-              @service.send(:do_http, request_method, base_url, nil, headers)
-              @service.should have_received(:do_http).with(request_method, base_url, nil, headers).once
-              @service.should have_received(:do_http).with(request_method, redirect_location, nil, headers).once
-            end
-          end
-        end
-      end
-
-      context 'when the method is upload' do
-        before do
-          construct_service :base_service
-          @service.stub(:do_http).and_call_original
-        end
-
-        context 'when a non-302 response is received' do
-          before do
-            stub_request(:post, base_url, ["200", "OK"], fixture("items.xml"))
-          end
-
-          it "calls do_http only once" do
-            @service.send(:do_http, :upload, base_url, nil, {})
-            @service.should have_received(:do_http).once
-          end
-        end
-
-        context 'when a 302 response is received' do
-          let(:headers) do
-            {
-              "Content-Type" => "application/xml",
-              "Accept" => "application/xml",
-              "Accept-Encoding" => "gzip, deflate"
-            }
-          end
-          let(:redirect_location) { "#{base_url}elsewhere" }
-
-          before do
-            stub_request(:post, base_url, ["302", "Found"], fixture("items.xml"), :location => redirect_location)
-          end
-
-          it "calls do_http only once" do
-            begin
-              @service.send(:do_http, :upload, base_url, nil, {})
-            rescue
-              @service.should have_received(:do_http).once
-            end
-          end
-
-          it 'raises an error' do
-            expect { @service.send(:do_http, :upload, base_url, nil, headers) }.to raise_error(RuntimeError)
-          end
-        end
-      end
+      expect(@service.company_id).to eq("9991111222")
+      expect(@service.oauth).not_to be_nil
     end
   end
 
@@ -160,7 +55,7 @@ describe Quickbooks::Service::BaseService do
     it "should throw request exception with no options" do
       xml = fixture('generic_error.xml')
       response = Struct.new(:code, :plain_body).new(400, xml)
-      expect { @service.send(:check_response, response) }.to raise_error
+      expect { @service.send(:check_response, response) }.to raise_error(Quickbooks::IntuitRequestException)
     end
 
     it "should add request xml to request exception" do
@@ -170,7 +65,7 @@ describe Quickbooks::Service::BaseService do
       begin
         @service.send(:check_response, response, :request => xml2)
       rescue Quickbooks::IntuitRequestException => ex
-        ex.request_xml.should == xml2
+        expect(ex.request_xml).to eq(xml2)
       end
     end
 
@@ -256,28 +151,6 @@ describe Quickbooks::Service::BaseService do
       response = Struct.new(:code, :plain_body).new(504, xml)
       expect { @service.send(:check_response, response) }.to raise_error(Quickbooks::ServiceUnavailable)
     end
-
-    it "handles error XML with a missing namespace" do
-      xml = <<-XML
-<?xml version=\"1.0\"?>
-<IntuitResponse time="2013-11-15T13:16:49.528-08:00">
-  <Fault type="SystemFault">
-    <Error code="10000">
-      <Message>An application error has occurred while processing your request</Message>
-      <Detail>System Failure Error: Could not find resource for relative : some more info here</Detail>
-    </Error>
-  </Fault>
-</IntuitResponse>
-      XML
-      response = Struct.new(:code, :plain_body).new(200, xml)
-
-      begin
-        @service.send :check_response, response
-        fail "Exception expected"
-      rescue Quickbooks::IntuitRequestException => exception
-        expect(exception.detail).to eq(xml)
-      end
-    end
   end
 
   it "Correctly handled an IntuitRequestException" do
@@ -292,20 +165,20 @@ describe Quickbooks::Service::BaseService do
 
     before do
       construct_service :vendor
-      stub_request(:get, @service.url_for_query, ["200", "OK"], fixture("vendors.xml"))
+      stub_http_request(:get, @service.url_for_query, ["200", "OK"], fixture("vendors.xml"))
     end
 
     it "should not log by default" do
-      Quickbooks.logger.should_receive(:info).never
+      expect(Quickbooks.logger).not_to receive(:info)
       @service.query
     end
 
     it "should log if Quickbooks.log = true" do
       Quickbooks.log = true
       obj = double('obj', :to_xml => '<test/>')
-      Nokogiri::XML::Document.any_instance.stub(:to_xml) { |arg| obj.to_xml }
-      obj.should_receive(:to_xml).once # will only called once on a get request, twice on a post
-      Quickbooks.logger.should_receive(:info).at_least(1)
+      expect_any_instance_of(Nokogiri::XML::Document).to receive(:to_xml) { |arg| obj.to_xml }
+      expect(obj).to receive(:to_xml).once # will only called once on a get request, twice on a post
+      expect(Quickbooks.logger).to receive(:info).at_least(1)
       @service.query
       Quickbooks.log = false
     end
@@ -313,8 +186,8 @@ describe Quickbooks::Service::BaseService do
     it "should log if Quickbooks.log = true but not prettyprint the xml" do
       Quickbooks.log = true
       Quickbooks.log_xml_pretty_print = false
-      Nokogiri::XML::Document.any_instance.should_not_receive(:to_xml)
-      Quickbooks.logger.should_receive(:info).at_least(1)
+      expect_any_instance_of(Nokogiri::XML::Document).not_to receive(:to_xml)
+      expect(Quickbooks.logger).to receive(:info).at_least(1)
       @service.query
       Quickbooks.log = false
       Quickbooks.log_xml_pretty_print = true

@@ -1,3 +1,62 @@
+## 1.0.5 (2020-01-28)
+
+* Fixed Disconnect (dependency on oauth_v1? which was removed in 1.0.2)
+
+## 1.0.4 (2020-01-22)
+
+* Purchase Order: added MINORVERSION support. Also added Received property
+* Add ability to download credit memo as pdf (#500) - Thanks @frenkel
+* Finish update to rspec 3 (#499); Remove rspec-its; Convert specs to RSpec 3.9.0 syntax with Transpec. Thanks @drewish
+
+## 1.0.3 (2020-01-08)
+
+* Added customer.tax_exemption_reason_id (#495) . Thanks @bcackerman
+* mxchan (thanks!)
+    - fix Content-Type in send sales receipt (#498)
+    - Fixes the `undefined method 'bytesize' for #<Hash...` error triggered when sending a sales receipt.
+    - Searched around and found #412 which already implemented the fix for sending invoices, but hadn't been implemented for sales receipt yet.
+
+## 1.0.2 (2019-12-19)
+
+* Dropped OAuth1 support
+* rspec updates. Thank you @drewish
+* Update SalesFormsPref fields on Preferences model (#492). Thank you @drewish
+* Better errors: Add more detail to AuthorizationFailures, Unwind logging and parsing code, Track last response's intuitTid. Thank you @drewish
+
+## 1.0.1 (2019-11-05)
+
+* Add minorversion to account service and update query url (#488). Thank you @colmheaney
+* Use pessimistic version constraint on oauth dependency (#485). Thank you @austinmckinley
+
+## 1.0.0 (2019-10-14)
+
+* OAuth2. With support for OAuth1 in mixed-mode.
+
+Thank you to everyone who has contributed!
+
+## 0.6.7 (2019-07-24)
+
+* Preferences sales_forms_prefs CustomField support
+* Fix test failures due to logging call on Stubbed object
+* Add CustomField#value accessor suitable for all CustomField types
+* Add support for custom fields config in Preferences
+* Change deprecated use of BigDecimal.new
+
+Thank you @armstrjare
+
+
+## 0.6.6 (2019-01-30)
+
+* Implemented minorversion support for Customer (at 33)
+* Added PrefVendorRef field support to Item
+
+## 0.6.5 (2019-01-07)
+
+* adding LinkedTxn collection into Quickbooks::Model::Bill per v3 API spec (#452), thank you @thaiden
+* Relax oauth gem dependency (#449) allow anything >= 0.4.5 but < 0.5, thank you @jnraine
+* Updates to the CompanyCurrency model, thank you @chrisgreen1993
+* Add a base class to easily rescue all QBO exceptions (#445) Having all the errors inherit from a single class means you can just rescue `Quickbooks::Error` and handle all of this gem's exceptions. Thank you @drewish
+
 ## 0.6.4 (2018-10-29)
 
 Yanked 0.6.3; built incorrectly. 0.6.4 has no functional differences between 0.6.3
